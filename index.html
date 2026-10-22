@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ШашлычОК — шашлык с огня</title>
+<style>
+body{margin:0;background:#171411;color:#fff;font-family:Arial,sans-serif}
+header{text-align:center;padding:28px 12px;background:#702719}
+h1{font-size:34px;margin:0}
+header p{margin-bottom:0}
+main{max-width:650px;margin:auto;padding:16px}
+.item{background:#29231e;border-radius:12px;padding:16px;margin:12px 0}
+.price{color:#ffc16c;font-weight:bold}
+button{background:#e77932;color:white;border:0;border-radius:8px;padding:12px;font-size:16px}
+input,textarea{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #777}
+footer{text-align:center;padding:24px;color:#ccc}
+</style>
+</head>
+<body>
+<header>
+<h1>ШашлычОК</h1>
+<p>Сочный шашлык с огня 🔥</p>
+</header>
+<main>
+<h2>Наше меню</h2>
+<div class="item">
+<h3>Шашлык из свиной шеи</h3>
+<p>Ароматный шашлык на углях</p>
+<p class="price">Цена: уточняется</p>
+<button onclick="add('Шашлык из свиной шеи')">В корзину</button>
+</div>
+<div class="item">
+<h3>Куриное филе</h3>
+<p>Нежное мясо на углях</p>
+<p class="price">Цена: уточняется</p>
+<button onclick="add('Куриное филе')">В корзину</button>
+</div>
+<div class="item">
+<h3>Люля-кебаб</h3>
+<p class="price">Цена: уточняется</p>
+<button onclick="add('Люля-кебаб')">В корзину</button>
+</div>
+<div class="item">
+<h2>Корзина</h2>
+<div id="cart">Пока пусто</div>
+<p id="total"></p>
+</div>
+<div class="item">
+<h2>Оформить заказ</h2>
+<form onsubmit="order(event)">
+<input id="name" placeholder="Ваше имя" required>
+<input id="phone" placeholder="Номер телефона" required>
+<textarea id="address" placeholder="Адрес доставки или самовывоз" required></textarea>
+<button type="submit">Отправить заказ</button>
+</form>
+<p id="msg"></p>
+</div>
+</main>
+<footer>ШашлычОК · Спасибо за ваш заказ!</footer>
+<script>
+let cart=[];
+function add(name){cart.push(name);render()}
+function render(){
+document.getElementById('cart').innerHTML=cart.length?
+cart.map((x,i)=>`${x} <button onclick="removeItem(${i})">Удалить</button>`).join('<hr>'):'Пока пусто';
+document.getElementById('total').textContent='Позиций: '+cart.length;
+}
+function removeItem(i){cart.splice(i,1);render()}
+function order(e){
+e.preventDefault();
+if(!cart.length){document.getElementById('msg').textContent='Сначала добавьте товары в корзину.';return}
+let text='Заказ ШашлычОК%0AИмя: '+encodeURIComponent(document.getElementById('name').value)+'%0AТелефон: '+encodeURIComponent(document.getElementById('phone').value)+'%0AПолучение: '+encodeURIComponent(document.getElementById('address').value)+'%0AТовары: '+encodeURIComponent(cart.join(', '));
+document.getElementById('msg').innerHTML='Заказ подготовлен. Для отправки в WhatsApp укажите номер магазина в коде сайта.';
+}
+</script>
+</body>
+</html>
