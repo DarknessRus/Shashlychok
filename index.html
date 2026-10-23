@@ -3,77 +3,485 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ШашлычОК — шашлык с огня</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ШашлычОК — меню и заказ</title>
 <style>
-body{margin:0;background:#171411;color:#fff;font-family:Arial,sans-serif}
-header{text-align:center;padding:28px 12px;background:#702719}
-h1{font-size:34px;margin:0}
-header p{margin-bottom:0}
-main{max-width:650px;margin:auto;padding:16px}
-.item{background:#29231e;border-radius:12px;padding:16px;margin:12px 0}
-.price{color:#ffc16c;font-weight:bold}
-button{background:#e77932;color:white;border:0;border-radius:8px;padding:12px;font-size:16px}
-input,textarea{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #777}
-footer{text-align:center;padding:24px;color:#ccc}
+:root{--bg:#080d13;--card:#111a24;--accent:#ff5b00;--text:#f5f7fa;--muted:#a4b2c2;--border:#2a3949}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px Arial,sans-serif}
+header{padding:24px 16px;text-align:center;background:linear-gradient(135deg,#38170e,#101720);background-position:center;background-size:cover}
+h1{margin:0;font-size:32px}header p{color:#ffd0ad}
+main{max-width:850px;margin:auto;padding:16px}
+.item,.panel{padding:16px;margin:12px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
+.item img{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:12px;margin-bottom:12px}
+.price{color:var(--accent);font-weight:bold}
+button{border:0;border-radius:10px;padding:12px 15px;background:var(--accent);color:white;font-weight:bold;font-size:15px;cursor:pointer}
+button.secondary{background:#202c39;border:1px solid var(--border)}
+input,textarea,select{width:100%;padding:12px;margin:6px 0 12px;border-radius:9px;border:1px solid var(--border);background:#0c131c;color:white;font:inherit}
+label{display:block;color:var(--muted);font-size:13px;margin-top:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+.hidden{display:none!important}
+#admin{border-color:var(--accent)}
+#admin h2{color:var(--accent)}
+#message{white-space:pre-wrap;color:#ffd0ad}
+footer{text-align:center;color:var(--muted);padding:24px}
 </style>
 </head>
 <body>
-<header>
-<h1>ШашлычОК</h1>
-<p>Сочный шашлык с огня 🔥</p>
+<header id="hero">
+  <h1 id="shopName">🔥 ШашлычОК</h1>
+  <p id="subtitle">Вкус настоящего огня</p>
 </header>
 <main>
-<h2>Наше меню</h2>
-<div class="item">
-<h3>Шашлык из свиной шеи</h3>
-<p>Ароматный шашлык на углях</p>
-<p class="price">Цена: уточняется</p>
-<button onclick="add('Шашлык из свиной шеи')">В корзину</button>
-</div>
-<div class="item">
-<h3>Куриное филе</h3>
-<p>Нежное мясо на углях</p>
-<p class="price">Цена: уточняется</p>
-<button onclick="add('Куриное филе')">В корзину</button>
-</div>
-<div class="item">
-<h3>Люля-кебаб</h3>
-<p class="price">Цена: уточняется</p>
-<button onclick="add('Люля-кебаб')">В корзину</button>
-</div>
-<div class="item">
-<h2>Корзина</h2>
-<div id="cart">Пока пусто</div>
-<p id="total"></p>
-</div>
-<div class="item">
-<h2>Оформить заказ</h2>
-<form onsubmit="order(event)">
-<input id="name" placeholder="Ваше имя" required>
-<input id="phone" placeholder="Номер телефона" required>
-<textarea id="address" placeholder="Адрес доставки или самовывоз" required></textarea>
-<button type="submit">Отправить заказ</button>
-</form>
-<p id="msg"></p>
-</div>
+  <div class="row">
+    <h2>Наше меню</h2>
+    <button class="secondary" onclick="toggleAdmin()">⚙️ Управление сайтом</button>
+  </div>
+
+  <section id="menu"></section>
+
+  <section class="panel">
+    <h2>🛒 Корзина</h2>
+    <div id="cart">Корзина пуста</div>
+    <p id="total" class="price"></p>
+    <button class="secondary" onclick="clearCart()">Очистить корзину</button>
+  </section>
+
+  <section class="panel">
+    <h2>Оформление заказа</h2>
+    <form id="orderForm">
+      <label>Ваше имя</label>
+      <input id="customerName" required>
+      <label>Телефон</label>
+      <input id="phone" type="tel" required>
+      <label>Получение заказа</label>
+      <select id="method">
+        <option>Доставка</option>
+        <option>Самовывоз</option>
+      </select>
+      <label>Адрес или комментарий</label>
+      <textarea id="address" rows="2"></textarea>
+      <label>Желаемые дата и время</label>
+      <input id="date" type="datetime-local">
+      <button type="submit">Подготовить заказ</button>
+    </form>
+    <p id="orderMessage"></p>
+  </section>
+
+  <section id="admin" class="panel hidden">
+    <h2>Управление сайтом</h2>
+    <p>Изменения меню, фотографий и оформления сохраняются на сервере.</p>
+
+    <label>Ключ администратора</label>
+    <input id="adminKey" type="password" autocomplete="current-password"
+      placeholder="Введите ADMIN_KEY из Render">
+
+    <label>Название магазина</label>
+    <input id="editShopName">
+
+    <label>Подзаголовок</label>
+    <input id="editSubtitle">
+
+    <div class="row">
+      <div>
+        <label>Цвет фона</label>
+        <input id="editBackgroundColor" type="color" value="#080d13">
+      </div>
+      <div>
+        <label>Цвет кнопок</label>
+        <input id="editAccent" type="color" value="#ff5b00">
+      </div>
+    </div>
+
+    <label>Фоновое изображение сайта из галереи</label>
+    <input id="backgroundFile" type="file" accept="image/*">
+    <div id="backgroundPreview"></div>
+    <button class="secondary" onclick="clearBackground()">Убрать изображение фона</button>
+
+    <label>Большое изображение в шапке сайта</label>
+    <input id="bannerFile" type="file" accept="image/*">
+    <div id="bannerPreview"></div>
+
+    <hr style="border-color:var(--border);margin:22px 0">
+    <h3>Товары</h3>
+    <div id="productEditor"></div>
+    <button onclick="addProduct()">＋ Добавить товар</button>
+    <p></p>
+    <button onclick="saveConfig()">💾 Сохранить все изменения</button>
+    <p id="message"></p>
+  </section>
 </main>
-<footer>ШашлычОК · Спасибо за ваш заказ!</footer>
+<footer>ШашлычОК · Вкус настоящего огня 🔥</footer>
+
 <script>
-let cart=[];
-function add(name){cart.push(name);render()}
-function render(){
-document.getElementById('cart').innerHTML=cart.length?
-cart.map((x,i)=>`${x} <button onclick="removeItem(${i})">Удалить</button>`).join('<hr>'):'Пока пусто';
-document.getElementById('total').textContent='Позиций: '+cart.length;
+const API = "https://shashlychok-server.onrender.com/api";
+let config = null;
+let cart = [];
+let backgroundData = "";
+let bannerData = "";
+
+function allProducts() {
+  return (config?.categories || []).flatMap(c =>
+    (c.items || []).map(p => ({...p, categoryName:c.name}))
+  );
 }
-function removeItem(i){cart.splice(i,1);render()}
-function order(e){
-e.preventDefault();
-if(!cart.length){document.getElementById('msg').textContent='Сначала добавьте товары в корзину.';return}
-let text='Заказ ШашлычОК%0AИмя: '+encodeURIComponent(document.getElementById('name').value)+'%0AТелефон: '+encodeURIComponent(document.getElementById('phone').value)+'%0AПолучение: '+encodeURIComponent(document.getElementById('address').value)+'%0AТовары: '+encodeURIComponent(cart.join(', '));
-document.getElementById('msg').innerHTML='Заказ подготовлен. Для отправки в WhatsApp укажите номер магазина в коде сайта.';
+
+async function readConfig() {
+  try {
+    const response = await fetch(API + "/config", {cache:"no-store"});
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    config = await response.json();
+    backgroundData = config.appearance?.backgroundImage || "";
+    bannerData = config.appearance?.bannerImage || "";
+    renderAll();
+  } catch (error) {
+    document.getElementById("menu").textContent =
+      "Не удалось загрузить меню. Проверьте доступность сервера.";
+  }
 }
+
+function renderAll() {
+  const a = config.appearance || {};
+  document.getElementById("shopName").textContent = config.shopName || "ШашлычОК";
+  document.getElementById("subtitle").textContent = config.subtitle || "";
+  document.documentElement.style.setProperty("--bg", a.background || "#080d13");
+  document.documentElement.style.setProperty("--accent", a.accent || "#ff5b00");
+  document.documentElement.style.setProperty("--text", a.text || "#f5f7fa");
+
+  document.getElementById("hero").style.backgroundImage = bannerData
+    ? `linear-gradient(#0007,#0007),url("${bannerData}")`
+    : "linear-gradient(135deg,#38170e,#101720)";
+
+  document.getElementById("editShopName").value = config.shopName || "";
+  document.getElementById("editSubtitle").value = config.subtitle || "";
+  document.getElementById("editBackgroundColor").value = a.background || "#080d13";
+  document.getElementById("editAccent").value = a.accent || "#ff5b00";
+
+  renderMenu();
+  renderProductEditor();
+  renderImagePreviews();
+}
+
+function renderMenu() {
+  const menu = document.getElementById("menu");
+  menu.replaceChildren();
+
+  const categories = config.categories || [];
+
+  categories.forEach(category => {
+    const heading = document.createElement("h2");
+    heading.textContent = category.name || "Меню";
+    menu.appendChild(heading);
+
+    (category.items || []).forEach(product => {
+      if (product.available === false) return;
+
+      const card = document.createElement("article");
+      card.className = "item";
+
+      if (product.photo) {
+        const img = document.createElement("img");
+        img.src = product.photo;
+        img.alt = product.name || "Блюдо";
+        img.loading = "lazy";
+        card.appendChild(img);
+      }
+
+      const title = document.createElement("h3");
+      title.textContent = product.name || "Блюдо";
+      card.appendChild(title);
+
+      if (product.description) {
+        const description = document.createElement("p");
+        description.textContent = product.description;
+        card.appendChild(description);
+      }
+
+      const price = document.createElement("p");
+      price.className = "price";
+      price.textContent = Number(product.price) > 0
+        ? `${product.price} ₽`
+        : "Цена уточняется";
+      card.appendChild(price);
+
+      const add = document.createElement("button");
+      add.textContent = "＋ В корзину";
+      add.onclick = () => {
+        cart.push({name:product.name, price:Number(product.price)||0});
+        renderCart();
+      };
+      card.appendChild(add);
+      menu.appendChild(card);
+    });
+  });
+}
+
+function renderCart() {
+  const target = document.getElementById("cart");
+  target.replaceChildren();
+
+  if (!cart.length) {
+    target.textContent = "Корзина пуста";
+  } else {
+    cart.forEach((item, i) => {
+      const line = document.createElement("p");
+      line.textContent = `${item.name} — ${item.price} ₽ `;
+
+      const remove = document.createElement("button");
+      remove.className = "secondary";
+      remove.textContent = "Удалить";
+      remove.onclick = () => {
+        cart.splice(i,1);
+        renderCart();
+      };
+
+      line.appendChild(remove);
+      target.appendChild(line);
+    });
+  }
+
+  document.getElementById("total").textContent =
+    `Итого: ${cart.reduce((sum,p)=>sum+p.price,0)} ₽`;
+}
+
+function clearCart() {
+  cart = [];
+  renderCart();
+}
+
+function toggleAdmin() {
+  document.getElementById("admin").classList.toggle("hidden");
+}
+
+function renderProductEditor() {
+  const editor = document.getElementById("productEditor");
+  editor.replaceChildren();
+
+  (config.categories || []).forEach((category, ci) => {
+    (category.items || []).forEach((product, pi) => {
+      const box = document.createElement("div");
+      box.className = "item";
+
+      const heading = document.createElement("h3");
+      heading.textContent = product.name || "Новый товар";
+      box.appendChild(heading);
+
+      const name = document.createElement("input");
+      name.placeholder = "Название товара";
+      name.value = product.name || "";
+      name.oninput = () => {
+        product.name = name.value;
+        heading.textContent = name.value || "Новый товар";
+      };
+      box.appendChild(name);
+
+      const price = document.createElement("input");
+      price.type = "number";
+      price.min = "0";
+      price.step = "1";
+      price.placeholder = "Цена в рублях";
+      price.value = product.price ?? 0;
+      price.oninput = () => product.price = Number(price.value) || 0;
+      box.appendChild(price);
+
+      const desc = document.createElement("textarea");
+      desc.placeholder = "Описание блюда";
+      desc.value = product.description || "";
+      desc.oninput = () => product.description = desc.value;
+      box.appendChild(desc);
+
+      const photoLabel = document.createElement("label");
+      photoLabel.textContent = "Фотография блюда из галереи";
+      box.appendChild(photoLabel);
+
+      const photo = document.createElement("input");
+      photo.type = "file";
+      photo.accept = "image/*";
+      photo.onchange = async () => {
+        const file = photo.files?.[0];
+        if (!file) return;
+        try {
+          product.photo = await fileToDataURL(file);
+          renderImagePreviews();
+          setMessage(`Фото «${product.name}» выбрано. Нажмите «Сохранить все изменения».`);
+        } catch (e) {
+          setMessage("Не удалось прочитать выбранный файл.");
+        }
+      };
+      box.appendChild(photo);
+
+      if (product.photo) {
+        const preview = document.createElement("img");
+        preview.src = product.photo;
+        preview.alt = "Предпросмотр";
+        preview.style.cssText = "max-width:100%;max-height:220px;object-fit:contain";
+        box.appendChild(preview);
+      }
+
+      const available = document.createElement("label");
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.checked = product.available !== false;
+      check.style.width = "auto";
+      check.onchange = () => product.available = check.checked;
+      available.append(check, document.createTextNode(" Показывать товар в меню"));
+      box.appendChild(available);
+
+      const del = document.createElement("button");
+      del.className = "secondary";
+      del.textContent = "Удалить товар";
+      del.onclick = () => {
+        category.items.splice(pi,1);
+        renderAll();
+      };
+      box.appendChild(del);
+      editor.appendChild(box);
+    });
+  });
+}
+
+function fileToDataURL(file) {
+  return new Promise((resolve,reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    // Исходный файл читается без изменения размера и качества.
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById("backgroundFile").addEventListener("change", async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  backgroundData = await fileToDataURL(file);
+  config.appearance.backgroundImage = backgroundData;
+  renderImagePreviews();
+});
+
+document.getElementById("bannerFile").addEventListener("change", async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  bannerData = await fileToDataURL(file);
+  config.appearance.bannerImage = bannerData;
+  renderAll();
+});
+
+function renderImagePreviews() {
+  const bg = document.getElementById("backgroundPreview");
+  bg.replaceChildren();
+  if (backgroundData) {
+    const img = document.createElement("img");
+    img.src = backgroundData;
+    img.alt = "Фон сайта";
+    img.style.cssText = "max-width:100%;max-height:180px;object-fit:contain";
+    bg.appendChild(img);
+  }
+
+  const banner = document.getElementById("bannerPreview");
+  banner.replaceChildren();
+  if (bannerData) {
+    const img = document.createElement("img");
+    img.src = bannerData;
+    img.alt = "Шапка сайта";
+    img.style.cssText = "max-width:100%;max-height:180px;object-fit:contain";
+    banner.appendChild(img);
+  }
+}
+
+function clearBackground() {
+  backgroundData = "";
+  if (config.appearance) config.appearance.backgroundImage = "";
+  renderImagePreviews();
+  renderAll();
+}
+
+function addProduct() {
+  if (!config.categories) config.categories = [];
+  if (!config.categories.length) {
+    config.categories.push({id:"menu",name:"Меню",items:[]});
+  }
+
+  config.categories[0].items.push({
+    id:"product-" + Date.now(),
+    name:"Новый товар",
+    price:0,
+    photo:"",
+    description:"",
+    available:true
+  });
+
+  renderAll();
+}
+
+function setMessage(text) {
+  document.getElementById("message").textContent = text;
+}
+
+async function saveConfig() {
+  const key = document.getElementById("adminKey").value.trim();
+  if (!key) {
+    setMessage("Введите ADMIN_KEY, заданный в Render.");
+    return;
+  }
+
+  config.shopName = document.getElementById("editShopName").value.trim() || "ШашлычОК";
+  config.subtitle = document.getElementById("editSubtitle").value.trim();
+
+  config.appearance = config.appearance || {};
+  config.appearance.background = document.getElementById("editBackgroundColor").value;
+  config.appearance.accent = document.getElementById("editAccent").value;
+  config.appearance.backgroundImage = backgroundData;
+  config.appearance.bannerImage = bannerData;
+
+  setMessage("Сохраняем…");
+
+  try {
+    const response = await fetch(API + "/config", {
+      method:"PUT",
+      headers:{
+        "Content-Type":"application/json",
+        "x-admin-key":key
+      },
+      body:JSON.stringify(config)
+    });
+
+    const result = await response.json().catch(()=>({}));
+    if (!response.ok) throw new Error(result.error || "HTTP " + response.status);
+
+    setMessage("Изменения сохранены.");
+    renderAll();
+  } catch (error) {
+    setMessage("Не удалось сохранить: " + error.message +
+      ". Проверьте ключ администратора, сервер и размер файлов.");
+  }
+}
+
+document.getElementById("orderForm").addEventListener("submit", e => {
+  e.preventDefault();
+
+  if (!cart.length) {
+    document.getElementById("orderMessage").textContent =
+      "Сначала добавьте блюда в корзину.";
+    return;
+  }
+
+  const text = [
+    "🔥 Заказ — ШашлычОК",
+    "Имя: " + document.getElementById("customerName").value,
+    "Телефон: " + document.getElementById("phone").value,
+    "Получение: " + document.getElementById("method").value,
+    "Адрес/комментарий: " + document.getElementById("address").value,
+    "Дата и время: " + document.getElementById("date").value,
+    "Состав заказа:",
+    ...cart.map(p=>`${p.name} — ${p.price} ₽`),
+    "Итого: " + cart.reduce((sum,p)=>sum+p.price,0) + " ₽"
+  ].join("\n");
+
+  document.getElementById("orderMessage").textContent =
+    "Заказ подготовлен. Скопируйте текст ниже и отправьте магазину:\n\n" + text;
+});
+
+readConfig();
 </script>
 </body>
 </html>
