@@ -82,6 +82,28 @@ footer{text-align:center;color:var(--muted);padding:24px}
     <label>Подзаголовок</label>
     <input id="editSubtitle">
 
+    <hr style="border-color:var(--border);margin:22px 0">
+    <h3>Настройки приложения</h3>
+    <label>Адрес самовывоза</label>
+    <input id="editPickupAddress" placeholder="Адрес магазина">
+    <div class="row">
+      <div>
+        <label>Минимальная сумма заказа, ₽</label>
+        <input id="editMinimumOrder" type="number" min="0" step="1" value="0">
+      </div>
+      <div>
+        <label>Базовая доставка, ₽ (если используется)</label>
+        <input id="editDeliveryFee" type="number" min="0" step="1" value="0">
+      </div>
+    </div>
+    <label>Часы работы</label>
+    <input id="editWorkingHours" placeholder="Например: ежедневно 10:00–22:00">
+    <label>Зона доставки (описание для приложения)</label>
+    <input id="editDeliveryZones" placeholder="Например: Троицк и ближайшие районы">
+    <label>Тарифы по районам — один район=цена на строку</label>
+    <textarea id="editDeliveryTariffs" rows="6" placeholder="Троицкая ГРЭС=400&#10;Мясокомбинат=350&#10;Троицк=200"></textarea>
+    <p>Для нескольких названий одного района укажите их через запятую слева от знака равенства. Например: Золотая сопка,Золотая Сопка=350. Более конкретные районы размещайте выше общих.</p>
+
     <div class="row">
       <div>
         <label>Цвет фона</label>
@@ -154,6 +176,19 @@ function renderAll() {
 
   document.getElementById("editShopName").value = config.shopName || "";
   document.getElementById("editSubtitle").value = config.subtitle || "";
+  const settings = config.settings || {};
+  document.getElementById("editPickupAddress").value =
+    config.pickupAddress ?? settings.pickupAddress ?? config.address ?? "";
+  document.getElementById("editMinimumOrder").value =
+    config.minimumOrder ?? config.minOrder ?? settings.minimumOrder ?? 0;
+  document.getElementById("editDeliveryFee").value =
+    config.deliveryFee ?? settings.deliveryFee ?? 0;
+  document.getElementById("editWorkingHours").value =
+    config.workingHours ?? settings.workingHours ?? "";
+  document.getElementById("editDeliveryZones").value =
+    config.deliveryZones ?? settings.deliveryZones ?? "";
+  document.getElementById("editDeliveryTariffs").value =
+    config.deliveryTariffsText ?? settings.deliveryTariffsText ?? "";
   document.getElementById("editBackgroundColor").value = a.background || "#080d13";
   document.getElementById("editAccent").value = a.accent || "#ff5b00";
 
@@ -426,6 +461,23 @@ async function saveConfig() {
 
   config.shopName = document.getElementById("editShopName").value.trim() || "ШашлычОК";
   config.subtitle = document.getElementById("editSubtitle").value.trim();
+
+  config.pickupAddress = document.getElementById("editPickupAddress").value.trim();
+  config.minimumOrder = Math.max(0, Number(document.getElementById("editMinimumOrder").value) || 0);
+  config.minOrder = config.minimumOrder;
+  config.deliveryFee = Math.max(0, Number(document.getElementById("editDeliveryFee").value) || 0);
+  config.workingHours = document.getElementById("editWorkingHours").value.trim();
+  config.deliveryZones = document.getElementById("editDeliveryZones").value.trim();
+  config.deliveryTariffsText = document.getElementById("editDeliveryTariffs").value.trim();
+  config.settings = config.settings || {};
+  Object.assign(config.settings, {
+    pickupAddress: config.pickupAddress,
+    minimumOrder: config.minimumOrder,
+    deliveryFee: config.deliveryFee,
+    workingHours: config.workingHours,
+    deliveryZones: config.deliveryZones,
+    deliveryTariffsText: config.deliveryTariffsText
+  });
 
   config.appearance = config.appearance || {};
   config.appearance.background = document.getElementById("editBackgroundColor").value;
