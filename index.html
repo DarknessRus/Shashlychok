@@ -456,29 +456,57 @@ async function saveConfig() {
   }
 }
 
-document.getElementById("orderForm").addEventListener("submit", e => {
+document.getElementById("orderForm").addEventListener("submit", async e => {
   e.preventDefault();
 
+  const message = document.getElementById("orderMessage");
+  const submit = e.submitter || e.currentTarget.querySelector('button[type="submit"]');
+
   if (!cart.length) {
-    document.getElementById("orderMessage").textContent =
-      "Сначала добавьте блюда в корзину.";
+    message.textContent = "Сначала добавьте блюда в корзину.";
+    return;
+  }
+
+  if (cart.some(p => !Number.isFinite(p.price) || p.price <= 0)) {
+    message.textContent = "В корзине есть блюдо без установленной цены. Удалите его или уточните цену у магазина.";
     return;
   }
 
   const text = [
     "🔥 Заказ — ШашлычОК",
-    "Имя: " + document.getElementById("customerName").value,
-    "Телефон: " + document.getElementById("phone").value,
+    "Имя: " + document.getElementById("customerName").value.trim(),
+    "Телефон: " + document.getElementById("phone").value.trim(),
     "Получение: " + document.getElementById("method").value,
-    "Адрес/комментарий: " + document.getElementById("address").value,
+    "Адрес/комментарий: " + document.getElementById("address").value.trim(),
     "Дата и время: " + document.getElementById("date").value,
     "Состав заказа:",
-    ...cart.map(p=>`${p.name} — ${p.price} ₽`),
-    "Итого: " + cart.reduce((sum,p)=>sum+p.price,0) + " ₽"
+    ...cart.map(p => `${p.name} — ${p.price} ₽`),
+    "Итого: " + cart.reduce((sum, p) => sum + p.price, 0) + " ₽"
   ].join("\n");
 
-  document.getElementById("orderMessage").textContent =
-    "Заказ подготовлен. Скопируйте текст ниже и отправьте магазину:\n\n" + text;
+  if (submit) submit.disabled = true;
+  message.textContent = "Отправляем заказ…";
+
+  try {
+    const response = await fetch(API + "/orders", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: text})
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || result.ok !== true) {
+      throw new Error(result.error || ("Ошибка сервера: HTTP " + response.status));
+    }
+
+    message.textContent = "Заказ принят сервером и отправлен в настроенный канал магазина. Сохраните эту информацию до подтверждения заказа.";
+    clearCart();
+    document.getElementById("orderForm").reset();
+  } catch (error) {
+    message.textContent = "Не удалось отправить заказ: " + error.message + ". Проверьте данные и попробуйте ещё раз.";
+  } finally {
+    if (submit) submit.disabled = false;
+  }
 });
 
 readConfig();
