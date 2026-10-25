@@ -256,6 +256,10 @@ async function loadCommunity(force=false) {
   const status = document.getElementById("communityStatus");
   if (!status) return;
   status.textContent = force ? "Обновляем данные ВК…" : "Загружаем публикации и фотографии группы…";
+  // Не оставляем прежнюю ленту видимой во время обновления: удалённые в ВК записи не должны выглядеть актуальными.
+  ["communityGroup", "communityPosts", "communityAlbums", "communityPhotos"].forEach(id => {
+    document.getElementById(id)?.replaceChildren();
+  });
   try {
     const response = await fetch(API + "/community" + (force ? "?refresh=" + Date.now() : ""), {cache:"no-store"});
     const data = await response.json();
@@ -309,7 +313,11 @@ async function loadCommunity(force=false) {
       (data.cached ? " · показан сохранённый кэш" : "") +
       (issues.length ? " · некоторые разделы ВК недоступны из-за прав ключа" : "");
   } catch (error) {
-    status.textContent = "Не удалось загрузить содержимое группы: " + error.message + ". Меню и заказы продолжают работать отдельно.";
+    // При ошибке не сохраняем старые публикации/фото на экране.
+    ["communityGroup", "communityPosts", "communityAlbums", "communityPhotos"].forEach(id => {
+      document.getElementById(id)?.replaceChildren();
+    });
+    status.textContent = "Не удалось получить актуальные данные ВК: " + error.message + ". Старая лента очищена; меню и заказы работают отдельно.";
   }
 }
 
