@@ -13,7 +13,7 @@ header{padding:24px 16px;text-align:center;background:linear-gradient(135deg,#38
 h1{margin:0;font-size:32px}header p{color:#ffd0ad}
 main{max-width:850px;margin:auto;padding:16px}
 .item,.panel{padding:16px;margin:12px 0;border:1px solid var(--border);border-radius:16px;background:var(--card)}
-.item img{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:12px;margin-bottom:12px}
+.item img{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:12px;margin-bottom:12px}.vk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.vk-card{padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card);overflow:hidden}.vk-card img{width:100%;max-height:320px;object-fit:contain;border-radius:10px}.vk-muted{color:var(--muted);font-size:13px;white-space:pre-wrap}.vk-text{white-space:pre-wrap;overflow-wrap:anywhere}.vk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .price{color:var(--accent);font-weight:bold}
 button{border:0;border-radius:10px;padding:12px 15px;background:var(--accent);color:white;font-weight:bold;font-size:15px;cursor:pointer}
 button.secondary{background:#202c39;border:1px solid var(--border)}
@@ -249,6 +249,68 @@ function renderMenu() {
       menu.appendChild(card);
     });
   });
+}
+
+
+async function loadCommunity(force=false) {
+  const status = document.getElementById("communityStatus");
+  if (!status) return;
+  status.textContent = force ? "Обновляем данные ВК…" : "Загружаем публикации и фотографии группы…";
+  try {
+    const response = await fetch(API + "/community" + (force ? "?refresh=" + Date.now() : ""), {cache:"no-store"});
+    const data = await response.json();
+    if (!response.ok || data.ok !== true) throw new Error(data.error || "HTTP " + response.status);
+    const group = document.getElementById("communityGroup");
+    group.replaceChildren();
+    if (data.group?.avatar) {
+      const avatar = document.createElement("img");
+      avatar.src = data.group.avatar; avatar.alt = "Фото сообщества";
+      avatar.style.cssText = "width:72px;height:72px;object-fit:cover;border-radius:50%;float:left;margin:0 12px 8px 0";
+      group.appendChild(avatar);
+    }
+    const about = document.createElement("p");
+    about.textContent = data.group?.description || "";
+    group.appendChild(about);
+    const posts = document.getElementById("communityPosts");
+    posts.replaceChildren();
+    (data.posts || []).forEach(post => {
+      const card = document.createElement("article"); card.className = "vk-card";
+      const date = document.createElement("div"); date.className = "vk-muted";
+      date.textContent = post.date ? new Date(post.date * 1000).toLocaleString("ru-RU") : "";
+      card.appendChild(date);
+      if (post.text) { const text = document.createElement("p"); text.className = "vk-text"; text.textContent = post.text; card.appendChild(text); }
+      (post.attachments || []).forEach(a => {
+        if (a.type === "photo" && a.url) { const img=document.createElement("img"); img.src=a.url; img.alt=a.text || "Фото из публикации"; img.loading="lazy"; card.appendChild(img); }
+        else if (a.url) { const link=document.createElement("a"); link.href=a.url; link.target="_blank"; link.rel="noopener"; link.textContent=a.title || (a.type==="video" ? "Открыть видео ВК" : "Открыть вложение"); link.style.color="var(--accent)"; card.appendChild(link); }
+      });
+      const actions=document.createElement("div"); actions.className="vk-actions";
+      const link=document.createElement("a"); link.href=post.url; link.target="_blank"; link.rel="noopener"; link.textContent="Открыть запись ВК ↗"; link.style.color="var(--accent)"; actions.appendChild(link); card.appendChild(actions);
+      posts.appendChild(card);
+    });
+    if (!posts.children.length) posts.textContent = "Публикации недоступны через текущий ключ ВК.";
+    const albums = document.getElementById("communityAlbums"); albums.replaceChildren();
+    (data.albums || []).forEach(album => {
+      const card=document.createElement("article"); card.className="vk-card";
+      if(album.cover){const img=document.createElement("img");img.src=album.cover;img.alt=album.title;img.loading="lazy";card.appendChild(img);}
+      const title=document.createElement("p");title.textContent=album.title + " · " + album.size + " фото";card.appendChild(title);
+      const a=document.createElement("a");a.href=album.link;a.target="_blank";a.rel="noopener";a.textContent="Открыть альбом ↗";a.style.color="var(--accent)";card.appendChild(a);albums.appendChild(card);
+    });
+    if(!albums.children.length) albums.textContent = "Фотоальбомы недоступны через текущий ключ ВК.";
+    const photos = document.getElementById("communityPhotos"); photos.replaceChildren();
+    (data.photos || []).forEach(photo => {
+      const card=document.createElement("article");card.className="vk-card";
+      const img=document.createElement("img");img.src=photo.url;img.alt=photo.text || "Фото сообщества";img.loading="lazy";card.appendChild(img);
+      if(photo.text){const caption=document.createElement("p");caption.textContent=photo.text;card.appendChild(caption);}
+      const a=document.createElement("a");a.href=photo.link;a.target="_blank";a.rel="noopener";a.textContent="Открыть фото ВК ↗";a.style.color="var(--accent)";card.appendChild(a);photos.appendChild(card);
+    });
+    if(!photos.children.length) photos.textContent = "Фотографии недоступны через текущий ключ ВК.";
+    const issues = Object.values(data.unavailable || {}).filter(Boolean);
+    status.textContent = "Обновлено: " + new Date(data.updatedAt || Date.now()).toLocaleString("ru-RU") +
+      (data.cached ? " · показан сохранённый кэш" : "") +
+      (issues.length ? " · некоторые разделы ВК недоступны из-за прав ключа" : "");
+  } catch (error) {
+    status.textContent = "Не удалось загрузить содержимое группы: " + error.message + ". Меню и заказы продолжают работать отдельно.";
+  }
 }
 
 function renderCart() {
